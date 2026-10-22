@@ -137,6 +137,22 @@ body.proprio .only-prop{display:none!important}
 .status i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
 .status.ok i{background:var(--gain)} .status.warn i{background:var(--accent)}
 
+.cloud{display:inline-flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:0 14px;height:46px;font:600 13px var(--f-body);cursor:pointer}
+.cloud:hover{border-color:rgba(231,177,79,.45);color:var(--fg)}
+.cloud i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.cloud.on{color:var(--fg)} .cloud.on i{background:var(--gain)}
+.cloud.err i{background:var(--loss)}
+.cloud[hidden]{display:none}
+dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--fg);padding:0;width:min(440px,calc(100vw - 24px));box-shadow:0 30px 80px rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(5,8,14,.72);backdrop-filter:blur(3px)}
+.dlg-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.dlg-h h3{font-family:var(--f-display);font-size:17px;margin:0}
+.dlg-h p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.dlg-x{background:none;border:0;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;width:34px;height:34px;border-radius:9px;flex:0 0 auto}
+.dlg-x:hover{background:var(--panel2);color:var(--fg)}
+.cl-b{padding:16px 18px;display:grid;gap:12px}
+.cl-b p{margin:0;font-size:13px;color:var(--muted)}
+.cl-b b{color:var(--fg)}
 @media (max-width:860px){.two{grid-template-columns:1fr}}
 @media (max-width:640px){
   .cal{grid-template-columns:1fr}
@@ -162,6 +178,7 @@ body.proprio .only-prop{display:none!important}
       <p id="subt">Valor fixo por dia, recalculado todo dia 01</p>
     </div>
     <div class="hdr-r">
+    <button type="button" class="cloud" id="b-cloud" hidden><i></i><span>Entrar com Google</span></button>
     <div class="cur" role="group" aria-label="Moeda">
       <button type="button" data-cur="BRL" title="Real (R$)"><svg viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="3" fill="#229e45"/><path d="M14 3 25 10 14 17 3 10Z" fill="#f8e509"/><circle cx="14" cy="10" r="4.2" fill="#2b49a3"/><path d="M10 9.3c2.6-.6 5.5-.2 8 1.1" stroke="#fff" stroke-width=".8" fill="none"/></svg><span>R$</span></button>
       <button type="button" data-cur="USD" title="Dólar (US$)"><svg viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="3" fill="#fff"/><g fill="#b22234"><rect y="0" width="28" height="1.54"/><rect y="3.08" width="28" height="1.54"/><rect y="6.15" width="28" height="1.54"/><rect y="9.23" width="28" height="1.54"/><rect y="12.3" width="28" height="1.54"/><rect y="15.4" width="28" height="1.54"/><rect y="18.46" width="28" height="1.54"/></g><rect width="12" height="10.77" fill="#3c3b6e"/></svg><span>US$</span></button>
@@ -226,7 +243,8 @@ body.proprio .only-prop{display:none!important}
           <button type="button" class="btn" id="b-exp">Baixar backup</button>
           <label class="btn" for="b-imp">Restaurar backup<input id="b-imp" type="file" accept="application/json" hidden></label>
         </div>
-        <p class="note">Os dados ficam salvos neste navegador e neste aparelho. Baixe um backup de vez em quando para não perder nada e para levar para outro aparelho.</p>
+        <p class="note">Clique em "Entrar com Google" no topo para ter o mesmo histórico no celular e no computador. Cada pessoa entra com o próprio Gmail e só vê as próprias contas. Sem entrar, os dados ficam salvos só neste navegador.</p>
+        <p class="note"> Baixe um backup de vez em quando para não perder nada e para levar para outro aparelho.</p>
         <p class="note">Comece digitando a banca no quadro "Banca no dia 01" e a porcentagem de risco no quadro "Valor fixo do dia". Cada conta tem a sua.</p>
         <p class="note">Todo dia 01, confira a banca na corretora e digite no quadro "Banca no dia 01" (com aportes ou saques). O valor fixo do mês é recalculado na hora. Se deixar em branco, usa a banca final do mês anterior.</p>
         <p class="note">Gain soma o valor fixo × payoff e Loss subtrai o valor fixo. Se o resultado do dia for outro valor, é só digitar (negativo para perda). Feriados: deixe o dia em branco.</p>
@@ -426,7 +444,7 @@ function loadAll(x){
 }
 function snapshot(){const m=curMesa();if(m){m.cfg=cfg;m.days=days;}return {mesas,cur:curId};}
 function lsGet(){let x=null;try{x=JSON.parse(localStorage.getItem("primas-v1")||"null");}catch(e){}loadAll(x);}
-function lsSave(){const x=snapshot();try{localStorage.setItem("primas-v1",JSON.stringify(x));}catch(e){}}
+function lsSave(){const x=snapshot();try{localStorage.setItem("primas-v1",JSON.stringify(x));}catch(e){}if(window.__nuvem)window.__nuvem.push(x);}
 function switchMesa(id){snapshot();curId=id;const m=curMesa();cfg=m.cfg;days=m.days;modo=m.tipo;view=null;delArm=false;bindParams();render();lsSave();}
 let delArm=false;
 function renderMesas(){
@@ -450,7 +468,7 @@ function renderMesas(){
 }
 let ref=null, saveT=null;
 function persist(delay){
-  lsSave(); setStatus("ok","Salvo neste navegador");
+  lsSave(); setStatus("ok",window.__nuvem?"Salvo na nuvem":"Salvo neste navegador");
   if(mode!=="db")return;
   clearTimeout(saveT);
   saveT=setTimeout(()=>{
@@ -535,6 +553,12 @@ $("p-sacar").addEventListener("change",e=>{cfg.sacar=e.target.value==="1"?1:0;sa
 document.querySelectorAll(".cur button").forEach(b=>b.onclick=()=>{cfg.moeda=b.dataset.cur;bindParams();saveCfg();});
 $("p-ini").addEventListener("change",e=>{if(/^\d{4}-\d{2}$/.test(e.target.value)){cfg.ini=e.target.value;view=null;saveCfg();}});
 
+// ---- ponte com a sincronização (script abaixo) ----
+window.__app={LS:"primas-v1",setStatus,
+  get:()=>JSON.parse(JSON.stringify(snapshot())),
+  apply(x){const c=curMesa()||{};loadAll(x);const k=mesas.find(m=>m.id===c.id)||mesas.find(m=>m.tipo===c.tipo&&m.nome===c.nome);if(k){curId=k.id;cfg=k.cfg;days=k.days;modo=k.tipo;}
+    try{localStorage.setItem("primas-v1",JSON.stringify(snapshot()));}catch(e){}bindParams();render();}};
+
 // ---- boot ----
 lsGet(); bindParams(); render(); setStatus("ok","Salvo neste navegador");
 
@@ -551,6 +575,87 @@ $("b-imp").onchange=e=>{
   e.target.value="";
 };
 })();
+</script>
+
+<dialog id="dlg-cloud" aria-labelledby="dcl-t">
+  <div class="dlg-h"><div><h3 id="dcl-t">Sincronização</h3><p>Celular e computador com o mesmo histórico</p></div><button type="button" class="dlg-x" data-close aria-label="Fechar">×</button></div>
+  <div class="cl-b" id="dcl-b"></div>
+</dialog>
+<script type="module">
+// Sincronização pelo Firebase (login com Google). Sem configuração ou sem login, a página funciona só neste navegador.
+const FIREBASE_CONFIG={apiKey:"AIzaSyC7J-DPwJxHqMlGccX0O_XRDfTDD9M2XI8",authDomain:"financas-lineti.firebaseapp.com",projectId:"financas-lineti",storageBucket:"financas-lineti.firebasestorage.app",messagingSenderId:"714622177070",appId:"1:714622177070:web:d6b5ec841504241632f4bf"};
+const APP="metatrade";
+const V="10.12.2", G=`https://www.gstatic.com/firebasejs/${V}/`;
+const A=window.__app, $=id=>document.getElementById(id);
+const btn=$("b-cloud"), dlg=$("dlg-cloud"), body=$("dcl-b");
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+dlg.addEventListener("click",e=>{if(e.target===dlg||e.target.closest("[data-close]"))dlg.close();});
+if(FIREBASE_CONFIG){
+  btn.hidden=false;
+  try{await start();}catch(e){console.error(e);ui(null,"Não consegui conectar à nuvem");}
+}
+async function start(){
+  const [{initializeApp},au,fs]=await Promise.all([import(G+"firebase-app.js"),import(G+"firebase-auth.js"),import(G+"firebase-firestore.js")]);
+  const app=initializeApp(FIREBASE_CONFIG), auth=au.getAuth(app);
+  let db;try{db=fs.initializeFirestore(app,{localCache:fs.persistentLocalCache()});}catch(e){db=fs.getFirestore(app);}
+  let user=null, ref=null, unsub=null, ready=false, last="";
+  const SYNC=A.LS+"-sync";
+  window.__nuvem=null;
+  // primeira vez neste aparelho: junta as contas daqui com as da nuvem (mesma conta = junta os dias)
+  const merge=(a,b)=>{
+    const same=(x,m)=>x.id===m.id||(x.tipo===m.tipo&&String(x.nome).trim().toLowerCase()===String(m.nome).trim().toLowerCase());
+    const used=new Set();
+    const out=b.mesas.map(m=>{const l=a.mesas.find(x=>!used.has(x)&&same(x,m));if(!l)return m;used.add(l);
+      const cfg={...m.cfg};if(!cfg.banca&&l.cfg&&l.cfg.banca)Object.assign(cfg,l.cfg);
+      return {...m,cfg,days:{...l.days,...m.days}};});
+    a.mesas.forEach(m=>{if(!used.has(m))out.push(m);});
+    return {mesas:out,cur:b.cur||a.cur};
+  };
+  const empty=x=>!x||!Array.isArray(x.mesas)||x.mesas.every(m=>!Object.keys(m.days||{}).length&&!(m.cfg&&m.cfg.banca));
+  const push=x=>{if(!ref||!ready)return;const s=JSON.stringify(x);if(s===last)return;last=s;
+    fs.setDoc(ref,{data:s,updated:fs.serverTimestamp()}).catch(e=>{console.error(e);ui(user,"Erro ao salvar na nuvem");});};
+  au.onAuthStateChanged(auth,u=>{
+    if(unsub){unsub();unsub=null;}
+    user=u; ready=false; window.__nuvem=null;
+    if(!u){ui(null);A.setStatus("ok","Salvo neste navegador");return;}
+    ui(u,"Conectando…");
+    ref=fs.doc(db,"users",u.uid,"apps",APP);
+    const local=A.get();
+    const first=localStorage.getItem(SYNC)!==u.uid;
+    unsub=fs.onSnapshot(ref,snap=>{
+      if(snap.metadata.hasPendingWrites)return;
+      let cloud=null;try{cloud=snap.exists()?JSON.parse(snap.data().data):null;}catch(e){}
+      if(cloud&&!Array.isArray(cloud.mesas))cloud=null;
+      if(!ready){
+        ready=true;window.__nuvem={push};
+        let x=cloud;
+        if(first&&!empty(local))x=cloud?merge(local,cloud):local;
+        try{localStorage.setItem(SYNC,u.uid);}catch(e){}
+        if(x){last=JSON.stringify(cloud);A.apply(x);}
+        push(A.get());
+        ui(u);A.setStatus("ok","Salvo na nuvem");
+        return;
+      }
+      if(cloud&&snap.data().data!==JSON.stringify(A.get())){last=snap.data().data;A.apply(cloud);A.setStatus("ok","Atualizado de outro aparelho");}
+    },e=>{console.error(e);ui(u,"Sem permissão na nuvem");});
+  });
+  btn.onclick=()=>{
+    if(user){dlg.showModal();return;}
+    const p=new au.GoogleAuthProvider();p.setCustomParameters({prompt:"select_account"});
+    au.signInWithPopup(auth,p).catch(e=>{
+      if(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")return au.signInWithRedirect(auth,p);
+      if(e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request"){console.error(e);ui(null,e.code==="auth/unauthorized-domain"?"Domínio não autorizado no Firebase":"Não consegui entrar");}
+    });
+  };
+  au.getRedirectResult(auth).catch(()=>{});
+  body.addEventListener("click",e=>{if(e.target.id==="b-sair"){au.signOut(auth);dlg.close();}});
+}
+function ui(u,msg){
+  btn.classList.toggle("on",!!u&&!msg);btn.classList.toggle("err",!!msg&&msg!=="Conectando…");
+  btn.lastChild.textContent=u?(msg||"Sincronizado"):(msg||"Entrar com Google");
+  btn.title=u?u.email||"":"Entre para ver o mesmo histórico no celular e no computador";
+  body.innerHTML=u?`<p>Conectada como <b>${esc(u.email||"")}</b>.</p><p>Tudo o que você digitar aqui aparece nos outros aparelhos em que entrar com esta mesma conta Google.</p><button type="button" class="btn" id="b-sair">Sair desta conta</button><p>Ao sair, os dados continuam neste aparelho, mas param de sincronizar.</p>`:"";
+}
 </script>
 
 </body>
